@@ -1,11 +1,9 @@
-puzzle-draw
-===========
+puzzle-draw-cmdline
+===================
 
-Rendering logic puzzles
+Rendering logic puzzles, command-line support.
 
-This includes both library code for drawing puzzles
-and some excutables for rendering graphics from
-test descriptions.
+See puzzle-draw for the main part of this project.
 
-The examples/ subdirectory may help show how to use this.
-
+This repository was split out to move the dependency
+on cairo out of puzzle-draw.

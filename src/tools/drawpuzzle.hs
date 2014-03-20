@@ -21,7 +21,7 @@ import System.Exit
 
 import qualified Data.Yaml as Y
 import Data.Aeson (Result(..))
-
+import Data.Aeson.Types (parse)
 
 data PuzzleOpts = PuzzleOpts
     { _format  :: String
@@ -89,7 +89,7 @@ main = do
                                >> exitFailure
                                >> return undefined
                     Just p  -> return p
-    let ps = drawPuzzle p
+    let ps = parse drawPuzzle p
         ocs = if _example opts
               then [DrawExample]
               else [DrawPuzzle, DrawSolution]

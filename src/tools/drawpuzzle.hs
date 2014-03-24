@@ -10,7 +10,7 @@ import Diagrams.Backend.CmdLine
 import Diagrams.TwoD.Puzzles.PuzzleDraw
 
 import Data.Puzzles.Grid
-import Data.Puzzles.ReadPuzzle
+import Data.Puzzles.Read
 import Diagrams.TwoD.Puzzles.Puzzle (OutputChoice(..), RenderPuzzle, draw)
 import Options.Applicative
 import Control.Monad

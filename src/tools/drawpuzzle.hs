@@ -89,7 +89,8 @@ main = do
                                >> exitFailure
                                >> return undefined
                     Just p  -> return p
-    let ps = parse drawPuzzle p
+    let TP t pv sv = p
+        ps = parse (handle drawPuzzleSol fail t) (pv, sv)
         ocs = if _example opts
               then [DrawExample]
               else [DrawPuzzle, DrawSolution]

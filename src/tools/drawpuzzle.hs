@@ -61,14 +61,15 @@ toDiagramOpts oc w (PuzzleOpts f e i) =
           base = takeBaseName i
           out = addExtension (base ++ outputSuffix oc) f
 
-renderPuzzle :: PuzzleOpts -> (OutputChoice -> Diagram B R2) ->
+renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
                 OutputChoice -> IO ()
 renderPuzzle opts r oc = do
     let x = r oc
-        w = fst . unr2 . boxExtents . boundingBox $ x
+    x' <- maybe (putStrLn "no solution" >> exitFailure) return $ x
+    let w = fst . unr2 . boxExtents . boundingBox $ x'
         dopts = toDiagramOpts oc w opts
         lopts = DiagramLoopOpts False Nothing 0
-    mainRender (dopts, lopts) x
+    mainRender (dopts, lopts) x'
 
 defaultOpts :: Parser a -> IO a
 defaultOpts optsParser = do
@@ -89,8 +90,8 @@ main = do
                                >> exitFailure
                                >> return undefined
                     Just p  -> return p
-    let TP t pv sv = p
-        ps = parse (handle drawPuzzleSol fail t) (pv, sv)
+    let TP t pv msv = p
+        ps = parse (handle drawPuzzleMaybeSol fail t) (pv, msv)
         ocs = if _example opts
               then [DrawExample]
               else [DrawPuzzle, DrawSolution]

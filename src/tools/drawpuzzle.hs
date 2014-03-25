@@ -14,6 +14,7 @@ import Data.Puzzles.Read
 import Diagrams.TwoD.Puzzles.Puzzle (OutputChoice(..), RenderPuzzle, draw)
 import Options.Applicative
 import Control.Monad
+import Data.Maybe
 
 import System.FilePath
 import System.Environment (getProgName)
@@ -24,9 +25,11 @@ import Data.Aeson (Result(..))
 import Data.Aeson.Types (parse)
 
 data PuzzleOpts = PuzzleOpts
-    { _format  :: String
-    , _example :: Bool
-    , _input   :: FilePath
+    { _format   :: String
+    , _puzzle   :: Bool
+    , _solution :: Bool
+    , _example  :: Bool
+    , _input    :: FilePath
     }
 
 puzzleOpts :: Parser PuzzleOpts
@@ -37,8 +40,14 @@ puzzleOpts = PuzzleOpts
              <> metavar "FMT"
              <> help "Desired output format by file extension")
     <*> switch
+            (long "puzzle" <> short 'p'
+             <> help "Render puzzle (to base.ext")
+    <*> switch
+            (long "solution" <> short 's'
+             <> help "Render solution (to base-sol.ext)")
+    <*> switch
             (long "example" <> short 'e'
-             <> help "Example formatting (puzzle next to solution)")
+             <> help "Render example (to base.ext)")
     <*> argument str
             (metavar "INPUT"
              <> help "Puzzle file in .pzl format")
@@ -54,7 +63,7 @@ outputSuffix DrawSolution = "-sol"
 outputSuffix DrawExample = ""
 
 toDiagramOpts :: OutputChoice -> Double -> PuzzleOpts -> DiagramOpts
-toDiagramOpts oc w (PuzzleOpts f e i) =
+toDiagramOpts oc w (PuzzleOpts f _ _ _ i) =
     DiagramOpts (Just w') Nothing out
     where w' = case f of "png" -> round (40 * w)
                          _     -> round . cmtopoint $ (0.8 * w)
@@ -62,14 +71,18 @@ toDiagramOpts oc w (PuzzleOpts f e i) =
           out = addExtension (base ++ outputSuffix oc) f
 
 renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
-                OutputChoice -> IO ()
-renderPuzzle opts r oc = do
+                (OutputChoice, Bool) -> IO ()
+renderPuzzle opts r (oc, req) = do
     let x = r oc
-    x' <- maybe (putStrLn "no solution" >> exitFailure) return $ x
-    let w = fst . unr2 . boxExtents . boundingBox $ x'
-        dopts = toDiagramOpts oc w opts
-        lopts = DiagramLoopOpts False Nothing 0
-    mainRender (dopts, lopts) x'
+    if req && isNothing x
+        then exitErr ("failed to render (no solution?): " ++ show oc)
+        else return ()
+    when (isJust x) $ do
+        let Just x' = x
+            w = fst . unr2 . boxExtents . boundingBox $ x'
+            dopts = toDiagramOpts oc w opts
+            lopts = DiagramLoopOpts False Nothing 0
+        mainRender (dopts, lopts) x'
 
 defaultOpts :: Parser a -> IO a
 defaultOpts optsParser = do
@@ -80,20 +93,31 @@ defaultOpts optsParser = do
                  <> header prog)
     execParser p
 
+checkOutput :: PuzzleOpts -> IO [(OutputChoice, Bool)]
+checkOutput (PuzzleOpts _ p s e _)
+    | (p || s) && e  = exitErr "example output conflicts with puzzle/solution"
+    | e              = return . map req $ [DrawExample]
+    | p && s         = return . map req $ [DrawPuzzle, DrawSolution]
+    | p              = return . map req $ [DrawPuzzle]
+    | s              = return . map req $ [DrawSolution]
+    | otherwise      = return [req DrawPuzzle, opt DrawSolution]
+  where
+    req x = (x, True)
+    opt x = (x, False)
+
 readPuzzle :: FilePath -> IO (Maybe TypedPuzzle)
 readPuzzle = Y.decodeFile
 
+exitErr :: String -> IO a
+exitErr e = putStrLn e >> exitFailure
+
 main = do
     opts <- defaultOpts puzzleOpts
+    ocs <- checkOutput opts
     mp <- readPuzzle (_input opts)
-    p <- case mp of Nothing -> putStrLn "failed to parse yaml"
-                               >> exitFailure
-                               >> return undefined
+    p <- case mp of Nothing -> exitErr "failed to parse yaml"
                     Just p  -> return p
     let TP t pv msv = p
         ps = parse (handle drawPuzzleMaybeSol fail t) (pv, msv)
-        ocs = if _example opts
-              then [DrawExample]
-              else [DrawPuzzle, DrawSolution]
     case ps of Success ps' -> mapM_ (renderPuzzle opts (draw ps')) ocs
-               Error e -> putStrLn e >> exitFailure
+               Error e -> exitErr e

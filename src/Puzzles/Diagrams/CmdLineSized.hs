@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Diagrams.Backend.Cairo.CmdLineSized where
+module Puzzles.Diagrams.CmdLineSized where
 
 import Diagrams.Prelude hiding ((<>), option, value)
 import Diagrams.Backend.Cairo

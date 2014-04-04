@@ -11,7 +11,7 @@ cabal-version:       >=1.8
 
 library
   -- Modules exported by the library.
-  exposed-modules:     Diagrams.Backend.Cairo.CmdLineSized
+  exposed-modules:     Puzzles.Diagrams.CmdLineSized
 
   -- Modules included in this library but not exported.
   -- other-modules:       

@@ -104,8 +104,8 @@ checkOutput (PuzzleOpts _ p s e _)
     req x = (x, True)
     opt x = (x, False)
 
-readPuzzle :: FilePath -> IO (Maybe TypedPuzzle)
-readPuzzle = Y.decodeFile
+readPuzzle :: FilePath -> IO (Either Y.ParseException TypedPuzzle)
+readPuzzle = Y.decodeFileEither
 
 exitErr :: String -> IO a
 exitErr e = putStrLn e >> exitFailure
@@ -114,9 +114,9 @@ main = do
     opts <- defaultOpts puzzleOpts
     ocs <- checkOutput opts
     mp <- readPuzzle (_input opts)
-    p <- case mp of Nothing -> exitErr "failed to parse yaml"
-                    Just p  -> return p
+    p <- case mp of Left  e -> exitErr $ "failed to parse yaml: " ++ show e
+                    Right p -> return p
     let TP t pv msv = p
-        ps = parse (handle drawPuzzleMaybeSol fail t) (pv, msv)
+        ps = parse (handle drawPuzzleMaybeSol t) (pv, msv)
     case ps of Success ps' -> mapM_ (renderPuzzle opts (draw ps')) ocs
                Error e -> exitErr e

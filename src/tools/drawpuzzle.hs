@@ -55,6 +55,7 @@ instance Parseable PuzzleOpts where
 cmtopoint :: Double -> Double
 cmtopoint = (* 28.3464567)
 
+outputSuffix :: OutputChoice -> String
 outputSuffix DrawPuzzle = ""
 outputSuffix DrawSolution = "-sol"
 outputSuffix DrawExample = ""
@@ -108,6 +109,7 @@ readPuzzle = Y.decodeFileEither
 exitErr :: String -> IO a
 exitErr e = putStrLn e >> exitFailure
 
+main :: IO ()
 main = do
     opts <- defaultOpts puzzleOpts
     ocs <- checkOutput opts

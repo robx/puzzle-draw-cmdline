@@ -20,8 +20,6 @@ import System.Environment (getProgName)
 import System.Exit
 
 import qualified Data.Yaml as Y
-import Data.Aeson (Result(..))
-import Data.Aeson.Types (parse)
 
 data PuzzleOpts = PuzzleOpts
     { _format   :: String
@@ -117,6 +115,6 @@ main = do
     p <- case mp of Left  e -> exitErr $ "failed to parse yaml: " ++ show e
                     Right p -> return p
     let TP t pv msv = p
-        ps = parse (handle drawPuzzleMaybeSol t) (pv, msv)
-    case ps of Success ps' -> mapM_ (renderPuzzle opts (draw ps')) ocs
-               Error e -> exitErr e
+        ps = Y.parseEither (handle drawPuzzleMaybeSol t) (pv, msv)
+    case ps of Right ps' -> mapM_ (renderPuzzle opts (draw ps')) ocs
+               Left    e -> exitErr e

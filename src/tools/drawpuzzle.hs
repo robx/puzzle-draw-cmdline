@@ -10,6 +10,7 @@ import Diagrams.Backend.CmdLine
 import Puzzles.Parse.Puzzle
 import Puzzles.Compose
 import Puzzles.Diagrams.Draw
+import Puzzles.PuzzleTypes
 
 import Options.Applicative
 import Control.Monad
@@ -23,6 +24,7 @@ import qualified Data.Yaml as Y
 
 data PuzzleOpts = PuzzleOpts
     { _format   :: String
+    , _type     :: Maybe String
     , _puzzle   :: Bool
     , _solution :: Bool
     , _example  :: Bool
@@ -36,6 +38,10 @@ puzzleOpts = PuzzleOpts
              <> value "png"
              <> metavar "FMT"
              <> help "Desired output format by file extension")
+    <*> (optional . strOption $
+            (long "type" <> short 't'
+             <> metavar "TYPE"
+             <> help "Puzzle type, overriding type in input file"))
     <*> switch
             (long "puzzle" <> short 'p'
              <> help "Render puzzle (to base.ext")
@@ -108,6 +114,14 @@ checkOutput opts
     req x = (x, True)
     opt x = (x, False)
 
+checkType :: Maybe String -> IO PuzzleType
+checkType mt = do
+    t <- maybe errno return mt
+    maybe (errunk t) return (lookupType t)
+  where
+    errno    = exitErr $ "no puzzle type given"
+    errunk t = exitErr $ "unknown puzzle type: " ++ t
+
 readPuzzle :: FilePath -> IO (Either Y.ParseException TypedPuzzle)
 readPuzzle = Y.decodeFileEither
 
@@ -119,9 +133,10 @@ main = do
     opts <- defaultOpts puzzleOpts
     ocs <- checkOutput opts
     mp <- readPuzzle (_input opts)
-    p <- case mp of Left  e -> exitErr $ "failed to parse yaml: " ++ show e
-                    Right p -> return p
-    let TP t pv msv = p
-        ps = Y.parseEither (handle drawPuzzleMaybeSol t) (pv, msv)
+    TP mt pv msv <- case mp of Left  e -> exitErr $
+                                          "parse failure: " ++ show e
+                               Right p -> return p
+    t <- checkType $ _type opts `mplus` mt
+    let ps = Y.parseEither (handle drawPuzzleMaybeSol t) (pv, msv)
     case ps of Right ps' -> mapM_ (renderPuzzle opts (draw ps')) ocs
                Left    e -> exitErr e

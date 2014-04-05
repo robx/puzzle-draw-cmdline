@@ -1,6 +1,8 @@
 name:                puzzle-draw-cmdline
 version:             0.1.0.0
 synopsis:            Creating graphics for pencil puzzles, command line tools.
+description:         Companion executable to puzzle-draw. Separate to keep
+                     the dependency on diagrams-cairo out of the library.
 license:             MIT
 license-file:        LICENSE
 author:              Robert Vollmert

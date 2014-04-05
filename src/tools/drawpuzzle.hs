@@ -61,12 +61,14 @@ outputSuffix DrawSolution = "-sol"
 outputSuffix DrawExample = ""
 
 toDiagramOpts :: OutputChoice -> Double -> PuzzleOpts -> DiagramOpts
-toDiagramOpts oc w (PuzzleOpts f _ _ _ i) =
+toDiagramOpts oc w opts =
     DiagramOpts (Just w') Nothing out
-    where w' = case f of "png" -> round (40 * w)
-                         _     -> round . cmtopoint $ (0.8 * w)
-          base = takeBaseName i
-          out = addExtension (base ++ outputSuffix oc) f
+  where
+    f = _format opts
+    w' = case f of "png" -> round (40 * w)
+                   _     -> round . cmtopoint $ (0.8 * w)
+    base = takeBaseName (_input opts)
+    out = addExtension (base ++ outputSuffix oc) f
 
 renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
                 (OutputChoice, Bool) -> IO ()
@@ -92,7 +94,7 @@ defaultOpts optsParser = do
     execParser p
 
 checkOutput :: PuzzleOpts -> IO [(OutputChoice, Bool)]
-checkOutput (PuzzleOpts _ p s e _)
+checkOutput opts
     | (p || s) && e  = exitErr "example output conflicts with puzzle/solution"
     | e              = return . map req $ [DrawExample]
     | p && s         = return . map req $ [DrawPuzzle, DrawSolution]
@@ -100,6 +102,9 @@ checkOutput (PuzzleOpts _ p s e _)
     | s              = return . map req $ [DrawSolution]
     | otherwise      = return [req DrawPuzzle, opt DrawSolution]
   where
+    p = _puzzle opts
+    s = _solution opts
+    e = _example opts
     req x = (x, True)
     opt x = (x, False)
 

@@ -1,10 +1,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Puzzles.Diagrams.CmdLineSized where
+module Diagrams.Puzzles.CmdLineSized where
 
 import Diagrams.Prelude hiding ((<>), option, value)
 import Diagrams.Backend.Cairo
-import Diagrams.Backend.Cairo.CmdLine
+import Diagrams.Backend.Cairo.CmdLine ()
 import Diagrams.Backend.CmdLine
 import Diagrams.BoundingBox
 
@@ -44,7 +44,7 @@ instance Mainable M where
     mainRender opts (M x) = do
         let w = fst . unr2 . boxExtents . boundingBox $ x
             w' = fromMaybe 1 (_scale opts) * w
-            (base, ext) = splitExtension (_outp opts)
+            (_, ext) = splitExtension (_outp opts)
             w'' = case ext of
                       ".png" -> round (40 * w')
                       _      -> round . cmtopoint $ w'

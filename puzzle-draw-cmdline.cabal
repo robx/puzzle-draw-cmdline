@@ -16,7 +16,7 @@ Source-repository head
 
 library
   -- Modules exported by the library.
-  exposed-modules:     Puzzles.Diagrams.CmdLineSized
+  exposed-modules:     Diagrams.Puzzles.CmdLineSized
 
   -- Other library packages from which modules are imported.
   build-depends:       base >= 4.2 && < 4.8,

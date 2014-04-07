@@ -7,10 +7,10 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.BoundingBox
 import Diagrams.Backend.CmdLine
 
-import Puzzles.Parse.Puzzle
-import Puzzles.Compose
-import Puzzles.Diagrams.Draw
-import Puzzles.PuzzleTypes
+import Text.Puzzles.Puzzle
+import Data.Puzzles.Compose
+import Diagrams.Puzzles.Draw
+import Data.Puzzles.PuzzleTypes
 
 import Options.Applicative
 import Control.Monad

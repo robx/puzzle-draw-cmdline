@@ -1,3 +1,8 @@
+0.1.0.3: 20140416
+-----------------
+
+* remove dependency on Cairo backend options
+
 0.1.0.2: 20140416
 -----------------
 

@@ -66,9 +66,6 @@ puzzleOpts = PuzzleOpts
   where
     fmts = "(" ++ intercalate ", " formats ++ ")"
 
-instance Parseable PuzzleOpts where
-    parser = puzzleOpts
-
 cmtopoint :: Double -> Double
 cmtopoint = (* 28.3464567)
 

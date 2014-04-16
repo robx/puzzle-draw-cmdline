@@ -5,12 +5,8 @@ module Main where
 import Diagrams.Prelude hiding (value, option, (<>), Result)
 import Diagrams.BoundingBox
 
-import Diagrams.Backend.CmdLine (DiagramOpts(..))
-
 #ifdef CAIRO
-import Diagrams.Backend.CmdLine (mainRender, DiagramLoopOpts(..))
-import Diagrams.Backend.Cairo (B)
-import Diagrams.Backend.Cairo.CmdLine ()
+import Diagrams.Backend.Cairo (B, renderCairo)
 #else
 import Diagrams.Backend.SVG (B, renderSVG)
 #endif
@@ -86,19 +82,16 @@ toRenderOpts oc w opts = RenderOpts out w'
     out = addExtension (base ++ outputSuffix oc) f
     round' = (fromIntegral :: Int -> Double) . round
 
-toDiagramOpts :: RenderOpts -> DiagramOpts
-toDiagramOpts ropts = DiagramOpts (Just . round $ _w ropts)
-                                  Nothing
-                                  (_file ropts)
+renderB :: FilePath -> SizeSpec2D -> Diagram B R2 -> IO ()
+renderB =
+#ifdef CAIRO
+    renderCairo
+#else
+    renderSVG
+#endif
 
 renderToFile :: RenderOpts -> Diagram B R2 -> IO ()
-#ifdef CAIRO
-renderToFile ropts = mainRender (toDiagramOpts ropts, lopts)
-  where
-    lopts = DiagramLoopOpts False Nothing 0
-#else
-renderToFile ropts = renderSVG (_file ropts) (Width $ _w ropts)
-#endif
+renderToFile ropts = renderB (_file ropts) (Width $ _w ropts)
 
 renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
                 (OutputChoice, Bool) -> IO ()

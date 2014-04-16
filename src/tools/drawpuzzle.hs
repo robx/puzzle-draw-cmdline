@@ -1,11 +1,19 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, CPP #-}
 
 module Main where
 
 import Diagrams.Prelude hiding (value, option, (<>), Result)
-import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.BoundingBox
-import Diagrams.Backend.CmdLine
+
+import Diagrams.Backend.CmdLine (DiagramOpts(..))
+
+#ifdef CAIRO
+import Diagrams.Backend.CmdLine (mainRender, DiagramLoopOpts(..))
+import Diagrams.Backend.Cairo (B)
+import Diagrams.Backend.Cairo.CmdLine ()
+#else
+import Diagrams.Backend.SVG (B, renderSVG)
+#endif
 
 import Text.Puzzles.Puzzle
 import Data.Puzzles.Compose
@@ -15,6 +23,7 @@ import Data.Puzzles.PuzzleTypes
 import Options.Applicative
 import Control.Monad
 import Data.Maybe
+import Data.List (intercalate)
 
 import System.FilePath
 import System.Environment (getProgName)
@@ -35,9 +44,9 @@ puzzleOpts :: Parser PuzzleOpts
 puzzleOpts = PuzzleOpts
     <$> strOption
             (long "format" <> short 'f'
-             <> value "png"
+             <> value (head formats)
              <> metavar "FMT"
-             <> help "Desired output format by file extension")
+             <> help ("Desired output format by file extension " ++ fmts))
     <*> (optional . strOption $
             (long "type" <> short 't'
              <> metavar "TYPE"
@@ -54,6 +63,8 @@ puzzleOpts = PuzzleOpts
     <*> argument str
             (metavar "INPUT"
              <> help "Puzzle file in .pzl format")
+  where
+    fmts = "(" ++ intercalate ", " formats ++ ")"
 
 instance Parseable PuzzleOpts where
     parser = puzzleOpts
@@ -72,10 +83,11 @@ toRenderOpts :: OutputChoice -> Double -> PuzzleOpts -> RenderOpts
 toRenderOpts oc w opts = RenderOpts out w'
   where
     f = _format opts
-    w' = case f of "png" -> 40 * w
+    w' = case f of "png" -> round' (40 * w)
                    _     -> cmtopoint (0.8 * w)
     base = takeBaseName (_input opts)
     out = addExtension (base ++ outputSuffix oc) f
+    round' = (fromIntegral :: Int -> Double) . round
 
 toDiagramOpts :: RenderOpts -> DiagramOpts
 toDiagramOpts ropts = DiagramOpts (Just . round $ _w ropts)
@@ -83,9 +95,13 @@ toDiagramOpts ropts = DiagramOpts (Just . round $ _w ropts)
                                   (_file ropts)
 
 renderToFile :: RenderOpts -> Diagram B R2 -> IO ()
+#ifdef CAIRO
 renderToFile ropts = mainRender (toDiagramOpts ropts, lopts)
   where
     lopts = DiagramLoopOpts False Nothing 0
+#else
+renderToFile ropts = renderSVG (_file ropts) (Width $ _w ropts)
+#endif
 
 renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
                 (OutputChoice, Bool) -> IO ()
@@ -124,6 +140,20 @@ checkOutput opts
     req x = (x, True)
     opt x = (x, False)
 
+formats :: [String]
+#ifdef CAIRO
+formats = ["png", "svg", "ps", "pdf"]
+#else
+formats = ["svg"]
+#endif
+
+checkFormat :: PuzzleOpts -> IO ()
+checkFormat opts = if f `elem` formats
+                     then return ()
+                     else exitErr $ "unknown format: " ++ f
+  where
+    f = _format opts
+
 checkType :: Maybe String -> IO PuzzleType
 checkType mt = do
     t <- maybe errno return mt
@@ -142,6 +172,7 @@ main :: IO ()
 main = do
     opts <- defaultOpts puzzleOpts
     ocs <- checkOutput opts
+    checkFormat opts
     mp <- readPuzzle (_input opts)
     TP mt pv msv <- case mp of Left  e -> exitErr $
                                           "parse failure: " ++ show e

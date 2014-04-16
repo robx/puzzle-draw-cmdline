@@ -66,15 +66,26 @@ outputSuffix DrawPuzzle = ""
 outputSuffix DrawSolution = "-sol"
 outputSuffix DrawExample = ""
 
-toDiagramOpts :: OutputChoice -> Double -> PuzzleOpts -> DiagramOpts
-toDiagramOpts oc w opts =
-    DiagramOpts (Just w') Nothing out
+data RenderOpts = RenderOpts { _file :: FilePath, _w :: Double }
+
+toRenderOpts :: OutputChoice -> Double -> PuzzleOpts -> RenderOpts
+toRenderOpts oc w opts = RenderOpts out w'
   where
     f = _format opts
-    w' = case f of "png" -> round (40 * w)
-                   _     -> round . cmtopoint $ (0.8 * w)
+    w' = case f of "png" -> 40 * w
+                   _     -> cmtopoint (0.8 * w)
     base = takeBaseName (_input opts)
     out = addExtension (base ++ outputSuffix oc) f
+
+toDiagramOpts :: RenderOpts -> DiagramOpts
+toDiagramOpts ropts = DiagramOpts (Just . round $ _w ropts)
+                                  Nothing
+                                  (_file ropts)
+
+renderToFile :: RenderOpts -> Diagram B R2 -> IO ()
+renderToFile ropts = mainRender (toDiagramOpts ropts, lopts)
+  where
+    lopts = DiagramLoopOpts False Nothing 0
 
 renderPuzzle :: PuzzleOpts -> (OutputChoice -> Maybe (Diagram B R2)) ->
                 (OutputChoice, Bool) -> IO ()
@@ -86,9 +97,8 @@ renderPuzzle opts r (oc, req) = do
     when (isJust x) $ do
         let Just x' = x
             w = fst . unr2 . boxExtents . boundingBox $ x'
-            dopts = toDiagramOpts oc w opts
-            lopts = DiagramLoopOpts False Nothing 0
-        mainRender (dopts, lopts) x'
+            ropts = toRenderOpts oc w opts
+        renderToFile ropts x'
 
 defaultOpts :: Parser a -> IO a
 defaultOpts optsParser = do

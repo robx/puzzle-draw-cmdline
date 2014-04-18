@@ -3,7 +3,6 @@
 module Main where
 
 import Diagrams.Prelude hiding (value, option, (<>), Result)
-import Diagrams.BoundingBox
 
 #ifdef CAIRO
 import Diagrams.Backend.Cairo (B, renderCairo)
@@ -76,11 +75,11 @@ toRenderOpts :: OutputChoice -> Double -> PuzzleOpts -> RenderOpts
 toRenderOpts oc w opts = RenderOpts out w'
   where
     f = _format opts
-    w' = case f of "png" -> round' (40 * w)
-                   _     -> cmtopoint (0.8 * w)
+    u = case f of "png" -> Pixels
+                  _     -> Points
+    w' = toOutputWidth u w
     base = takeBaseName (_input opts)
     out = addExtension (base ++ outputSuffix oc) f
-    round' = (fromIntegral :: Int -> Double) . round
 
 renderB :: FilePath -> SizeSpec2D -> Diagram B R2 -> IO ()
 renderB =
@@ -102,8 +101,7 @@ renderPuzzle opts r (oc, req) = do
         else return ()
     when (isJust x) $ do
         let Just x' = x
-            w = fst . unr2 . boxExtents . boundingBox $ x'
-            ropts = toRenderOpts oc w opts
+            ropts = toRenderOpts oc (diagramWidth x') opts
         renderToFile ropts x'
 
 defaultOpts :: Parser a -> IO a

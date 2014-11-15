@@ -1,3 +1,5 @@
+**Obsolete, the commandline tool has been merged into [puzzle-draw][puzzle-draw]**.
+
 puzzle-draw-cmdline
 ===================
 
